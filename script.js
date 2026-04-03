@@ -20,23 +20,35 @@ async function loadProducts() {
     const to = from + itemsPerPage - 1;
     const searchText = searchInput.value.toLowerCase();
 
+    // Inisialisasi query
     let query = supabase.from('produk').select('*', { count: 'exact' });
 
-    if (activeCategory !== 'Semua') query = query.eq('kategori', activeCategory);
-    if (searchText) query = query.ilike('nama', `%${searchText}%`);
+    // Filter Kategori
+    if (activeCategory !== 'Semua') {
+        query = query.eq('kategori', activeCategory);
+    }
+
+    // Filter Pencarian
+    if (searchText) {
+        query = query.ilike('nama', `%${searchText}%`);
+    }
 
     const { data, count, error } = await query
         .order('id', { ascending: false })
         .range(from, to);
 
-    if (error) return;
+    if (error) {
+        console.error("Cakra di JS:", error);
+        return;
+    }
+    
     render(data);
     setupPagination(count);
 }
 
 function render(data) {
     productGrid.innerHTML = '';
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
         productGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px 0; color: #999;">Produk tidak ditemukan... 🔍</p>';
         return;
     }
@@ -56,12 +68,14 @@ function setupPagination(totalItems) {
     paginationBox.innerHTML = '';
     if (totalPages <= 1) return;
 
+    // Tombol Prev
     const prevBtn = document.createElement('button');
     prevBtn.innerText = '‹'; prevBtn.className = 'page-btn';
     prevBtn.disabled = currentPage === 0;
     prevBtn.onclick = () => { currentPage--; loadProducts(); window.scrollTo(0,0); };
     paginationBox.appendChild(prevBtn);
 
+    // Angka
     for (let i = 0; i < totalPages; i++) {
         const btn = document.createElement('button');
         btn.innerText = i + 1;
@@ -70,6 +84,7 @@ function setupPagination(totalItems) {
         paginationBox.appendChild(btn);
     }
 
+    // Tombol Next
     const nextBtn = document.createElement('button');
     nextBtn.innerText = '›'; nextBtn.className = 'page-btn';
     nextBtn.disabled = currentPage >= totalPages - 1;
@@ -77,16 +92,21 @@ function setupPagination(totalItems) {
     paginationBox.appendChild(nextBtn);
 }
 
+// Event Klik Kategori
 catButtons.forEach(btn => {
     btn.addEventListener('click', () => {
         catButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         activeCategory = btn.getAttribute('data-cat');
-        currentPage = 0;
+        currentPage = 0; // Reset ke hal 1
         loadProducts();
     });
 });
 
-searchInput.addEventListener('input', () => { currentPage = 0; loadProducts(); });
+// Event Ngetik Search
+searchInput.addEventListener('input', () => {
+    currentPage = 0; // Reset ke hal 1
+    loadProducts();
+});
 
 loadProducts();
