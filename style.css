@@ -14,13 +14,13 @@ body { font-family: -apple-system, sans-serif; background-color: #f6f6f6; margin
     border: 1px solid #eee; background-color: #f1f3f5; font-size: 14px; outline: none;
 }
 
-/* Kategori Scroll */
+/* Kategori Scroll Samping */
 .category-wrapper { overflow: hidden; margin-bottom: 20px; }
 .category-container {
     display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px;
-    scrollbar-width: none;
+    scrollbar-width: none; /* Firefox */
 }
-.category-container::-webkit-scrollbar { display: none; }
+.category-container::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
 .cat-btn {
     padding: 8px 18px; border-radius: 20px; background: white;
@@ -32,7 +32,7 @@ body { font-family: -apple-system, sans-serif; background-color: #f6f6f6; margin
 /* GRID 2 KOLOM (Mobile First) */
 .product-grid { 
     display: grid; 
-    grid-template-columns: repeat(2, 1fr); 
+    grid-template-columns: repeat(2, 1fr); /* Maksa 2 kolom di HP */
     gap: 10px; 
 }
 
@@ -57,7 +57,7 @@ body { font-family: -apple-system, sans-serif; background-color: #f6f6f6; margin
     font-size: 12px; text-align: center; margin-top: auto;
 }
 
-/* Desktop View */
+/* Tampilan Desktop (Laptop) */
 @media (min-width: 768px) {
     .product-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
 }
