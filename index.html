@@ -2,36 +2,145 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Katalog Racun Shopee</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etalase Racun Elektronik</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f4f7f6; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+        }
+        .header h1 { 
+            color: #333; 
+            margin-bottom: 5px; 
+        }
+        .header p { 
+            color: #777; 
+            font-size: 14px; 
+        }
+        /* Desain Grid Etalase */
+        .product-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+            gap: 20px; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+        }
+        /* Desain Kartu Produk */
+        .product-card { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+            text-align: center; 
+            transition: transform 0.2s;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        .product-card img { 
+            width: 100%; 
+            height: 200px; 
+            object-fit: cover; 
+            border-radius: 8px; 
+            margin-bottom: 10px;
+        }
+        .product-card h3 { 
+            font-size: 16px; 
+            color: #222; 
+            margin: 10px 0 5px; 
+        }
+        .product-card p { 
+            color: #888; 
+            font-size: 13px; 
+            margin-bottom: 15px; 
+        }
+        .btn-beli { 
+            display: block; 
+            background: #ee4d2d; /* Warna khas oren Shopee */
+            color: white; 
+            padding: 10px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            font-size: 14px;
+        }
+        .btn-beli:hover { 
+            background: #d73a1c; 
+        }
+    </style>
 </head>
 <body>
-    <header class="sticky-header">
-        <div class="header-top">
-            <h1>⚡ Racun Shopee Pranajaya</h1>
-            <p>Pilihan Terbaik Untukmu</p>
-        </div>
 
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="🔍 Cari nama atau ketik nomor...">
-        </div>
+    <div class="header">
+        <h1>Racun Elektronik ⚡</h1>
+        <p>Rekomendasi gadget dan elektronik terbaik pilihan admin</p>
+    </div>
 
-        <nav class="categories-wrapper">
-            <div class="categories" id="categoryList">
-                <button class="cat-btn active" onclick="filterCategory('Semua', this)">Semua</button>
-                <button class="cat-btn" onclick="filterCategory('Setup Gaming', this)">Setup Gaming</button>
-                <button class="cat-btn" onclick="filterCategory('Gadget', this)">Gadget</button>
-                <button class="cat-btn" onclick="filterCategory('Kamar', this)">Kamar</button>
-            </div>
-        </nav>
-    </header>
+    <div class="product-grid" id="productGrid">
+        <p style="text-align: center; width: 100%; color: #666;">Sedang menata etalase... ⏳</p>
+    </div>
 
-    <main class="container">
-        <div id="product-grid" class="product-grid">
-            </div>
-    </main>
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    <script src="script.js"></script>
+        // 1. KTP dan Alamat Resmi
+        const supabaseUrl = 'https://svfaoiofpyzovkdqrsqo.supabase.co';
+        const supabaseKey = 'sb_publishable_LIGKz-_pNueJeC054YMMDg_PjtG1FCQ';
+
+        // 2. Mesin Baru Anti-Cegat Satpam
+        const supabase = createClient(supabaseUrl, supabaseKey, {
+            global: {
+                headers: {
+                    'apikey': supabaseKey,
+                    'Authorization': `Bearer ${supabaseKey}`
+                }
+            }
+        });
+
+        const productGrid = document.getElementById('productGrid');
+
+        // Fungsi memanggil kurir untuk ambil data dari Gudang
+        async function loadProducts() {
+            const { data, error } = await supabase.from('produk').select('*').order('id', { ascending: false });
+
+            // Kalau gagal ambil data
+            if (error) {
+                console.error("Gagal ambil data:", error);
+                productGrid.innerHTML = '<p style="text-align: center; width: 100%;">Gagal memuat produk. Coba refresh halaman.</p>';
+                return;
+            }
+
+            productGrid.innerHTML = ''; // Bersihkan teks loading
+
+            // Kalau gudang masih kosong
+            if (data.length === 0) {
+                productGrid.innerHTML = '<p style="text-align: center; width: 100%;">Belum ada produk di etalase.</p>';
+                return;
+            }
+
+            // Kalau ada barang, tata di etalase
+            data.forEach(item => {
+                productGrid.innerHTML += `
+                    <div class="product-card">
+                        <img src="${item.gambar}" alt="${item.nama}">
+                        <h3>${item.nama}</h3>
+                        <p>${item.kategori}</p>
+                        <a href="${item.link}" target="_blank" class="btn-beli">Lihat Produk</a>
+                    </div>
+                `;
+            });
+        }
+
+        // Jalankan perintah saat halaman dibuka
+        loadProducts();
+    </script>
+
 </body>
 </html>
