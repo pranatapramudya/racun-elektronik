@@ -1,189 +1,109 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ruang Admin</title>
-    <style>
-        body { font-family: system-ui, sans-serif; background: #f3f4f6; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input[type="text"], input[type="url"], select, input[type="file"] { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
-        .btn-submit { background: #111827; width: 100%; margin-bottom: 20px; }
-        .btn-edit { background: #f59e0b; }
-        .btn-delete { background: #ef4444; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
-        img { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; }
-    </style>
-</head>
-<body>
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    <script>
-        const password = prompt("Masukkan PIN Rahasia:");
-        if(password !== "123123") { 
-            alert("Akses Ditolak!");
-            window.location.href = "index.html"; 
-        }
-    </script>
+// 1. Deklarasi (Cukup satu kali saja, tidak boleh ada yang dobel)
+const supabaseUrl = 'https://svfaoiofpyzovkdqrsqo.supabase.co';
+const supabaseKey = 'sb_publishable_LIGKz-_pNueJeC054YMMDg_PjtG1FCQ';
 
-    <div class="container">
-        <h2>🛠️ Dapur Admin - Racun Shopee</h2>
-        
-        <form id="adminForm">
-            <input type="hidden" id="editId">
-            <input type="hidden" id="oldImageUrl"> <input type="text" id="inputNama" placeholder="Nama Produk" required>
-            
-            <select id="inputKategori" required>
-                <option value="Setup Gaming">Setup Gaming</option>
-                <option value="Gadget">Gadget</option>
-                <option value="Kamar">Kamar</option>
-            </select>
-            
-            <label style="font-size: 14px; font-weight: bold; display: block; margin-bottom: 5px;">Upload Gambar Produk:</label>
-            <input type="file" id="inputGambar" accept="image/*">
-            <p id="infoGambarLama" style="font-size: 12px; color: #ef4444; margin-top: -5px; margin-bottom: 10px; display: none;">*Gambar sudah ada. Biarkan kosong jika tidak ingin mengganti gambar.</p>
+// 2. Bekali kurir dengan Alamat DAN Kunci
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-            <input type="url" id="inputLink" placeholder="Link Shopee Affiliate" required>
-            
-            <button type="submit" class="btn-submit" id="btnSubmit">Simpan Barang Baru</button>
-        </form>
+const form = document.getElementById('adminForm');
+const tableBody = document.getElementById('tableBody');
+const btnSubmit = document.getElementById('btnSubmit');
 
-        <h3>Daftar Barang di Gudang</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Gambar</th>
-                    <th>ID</th>
-                    <th>Nama</th>
-                    <th>Kategori</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                <tr><td colspan="5">Memuat data...</td></tr>
-            </tbody>
-        </table>
-    </div>
+async function loadData() {
+    const { data, error } = await supabase.from('produk').select('*').order('id', { ascending: false });
+    if (error) return console.error("Gagal ambil data:", error);
+    
+    tableBody.innerHTML = '';
+    data.forEach(item => {
+        tableBody.innerHTML += `
+            <tr>
+                <td><img src="${item.gambar}"></td>
+                <td>${item.id}</td>
+                <td>${item.nama}</td>
+                <td>${item.kategori}</td>
+                <td>
+                    <button class="btn-edit" onclick="editData(${item.id}, '${item.nama}', '${item.kategori}', '${item.gambar}', '${item.link}')">Edit</button>
+                    <button class="btn-delete" onclick="hapusData(${item.id})">Hapus</button>
+                </td>
+            </tr>
+        `;
+    });
+}
 
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    btnSubmit.innerText = 'Mengunggah & Menyimpan... ⏳';
 
-        // MASUKKAN URL & KEY SUPABASE KAMU DI SINI
-        const supabaseUrl = 'https://svfaoiofpyzovkdqrsqo.supabase.co';
-        const supabaseKey = 'sb_publishable_LIGKz-_pNueJeC054YMMDg_PjtG1FCQ';
-        const supabase = createClient(supabaseUrl, supabaseKey);
+    const id = document.getElementById('editId').value;
+    const fileInput = document.getElementById('inputGambar');
+    let finalImageUrl = document.getElementById('oldImageUrl').value; 
 
-        const form = document.getElementById('adminForm');
-        const tableBody = document.getElementById('tableBody');
-        const btnSubmit = document.getElementById('btnSubmit');
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const fileName = `${Date.now()}-${file.name}`; 
 
-        // Fungsi Ambil Data (Sama seperti sebelumnya)
-        async function loadData() {
-            const { data, error } = await supabase.from('produk').select('*').order('id', { ascending: false });
-            if (error) return alert("Gagal ambil data!");
-            
-            tableBody.innerHTML = '';
-            data.forEach(item => {
-                tableBody.innerHTML += `
-                    <tr>
-                        <td><img src="${item.gambar}"></td>
-                        <td>${item.id}</td>
-                        <td>${item.nama}</td>
-                        <td>${item.kategori}</td>
-                        <td>
-                            <button class="btn-edit" onclick="editData(${item.id}, '${item.nama}', '${item.kategori}', '${item.gambar}', '${item.link}')">Edit</button>
-                            <button class="btn-delete" onclick="hapusData(${item.id})">Hapus</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('gambar') 
+            .upload(fileName, file);
 
-        // Fungsi Simpan (Sekarang pakai logika Upload Gambar)
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            btnSubmit.innerText = 'Mengunggah & Menyimpan... ⏳';
-
-            const id = document.getElementById('editId').value;
-            const fileInput = document.getElementById('inputGambar');
-            let finalImageUrl = document.getElementById('oldImageUrl').value; // Default ke gambar lama jika ada
-
-            // Cek apakah user memilih gambar baru dari HP/PC
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                const fileName = `${Date.now()}-${file.name}`; // Bikin nama unik pakai waktu agar tidak bentrok
-
-                // 1. Upload ke Storage
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('gambar') 
-                    .upload(fileName, file);
-
-                if (uploadError) {
-                    alert('Gagal upload gambar: ' + uploadError.message);
-                    btnSubmit.innerText = 'Simpan Barang Baru';
-                    return;
-                }
-
-                // 2. Minta public URL dari gambar yang baru di-upload
-                const { data: publicUrlData } = supabase.storage
-                    .from('gambar')
-                    .getPublicUrl(fileName);
-
-                finalImageUrl = publicUrlData.publicUrl;
-            }
-
-            // Validasi: Pastikan ada gambar untuk produk baru
-            if (!finalImageUrl) {
-                alert('Pilih gambar produk terlebih dahulu!');
-                btnSubmit.innerText = 'Simpan Barang Baru';
-                return;
-            }
-
-            const payload = {
-                nama: document.getElementById('inputNama').value,
-                kategori: document.getElementById('inputKategori').value,
-                gambar: finalImageUrl,
-                link: document.getElementById('inputLink').value
-            };
-
-            // 3. Simpan data teks + URL gambar ke Database
-            if (id) {
-                await supabase.from('produk').update(payload).eq('id', id);
-            } else {
-                await supabase.from('produk').insert([payload]);
-            }
-
-            // Reset Form ke keadaan awal
-            form.reset();
-            document.getElementById('editId').value = '';
-            document.getElementById('oldImageUrl').value = '';
-            document.getElementById('infoGambarLama').style.display = 'none';
+        if (uploadError) {
+            alert('Gagal upload gambar: ' + uploadError.message);
             btnSubmit.innerText = 'Simpan Barang Baru';
-            loadData();
-        });
-
-        // Mode Edit: Pindahkan data ke form, biarkan input file kosong
-        window.editData = function(id, nama, kategori, gambar, link) {
-            document.getElementById('editId').value = id;
-            document.getElementById('inputNama').value = nama;
-            document.getElementById('inputKategori').value = kategori;
-            document.getElementById('oldImageUrl').value = gambar;
-            document.getElementById('inputLink').value = link;
-
-            document.getElementById('infoGambarLama').style.display = 'block';
-            btnSubmit.innerText = 'Simpan Perubahan';
-            window.scrollTo(0, 0);
+            return;
         }
 
-        window.hapusData = async function(id) {
-            if(confirm("Yakin hapus barang ini?")) {
-                await supabase.from('produk').delete().eq('id', id);
-                loadData();
-            }
-        }
+        const { data: publicUrlData } = supabase.storage
+            .from('gambar')
+            .getPublicUrl(fileName);
 
+        finalImageUrl = publicUrlData.publicUrl;
+    }
+
+    if (!finalImageUrl) {
+        alert('Pilih gambar produk terlebih dahulu!');
+        btnSubmit.innerText = 'Simpan Barang Baru';
+        return;
+    }
+
+    const payload = {
+        nama: document.getElementById('inputNama').value,
+        kategori: document.getElementById('inputKategori').value,
+        gambar: finalImageUrl,
+        link: document.getElementById('inputLink').value
+    };
+
+    if (id) {
+        await supabase.from('produk').update(payload).eq('id', id);
+    } else {
+        await supabase.from('produk').insert([payload]);
+    }
+
+    form.reset();
+    document.getElementById('editId').value = '';
+    document.getElementById('oldImageUrl').value = '';
+    document.getElementById('infoGambarLama').style.display = 'none';
+    btnSubmit.innerText = 'Simpan Barang Baru';
+    loadData();
+});
+
+window.editData = function(id, nama, kategori, gambar, link) {
+    document.getElementById('editId').value = id;
+    document.getElementById('inputNama').value = nama;
+    document.getElementById('inputKategori').value = kategori;
+    document.getElementById('oldImageUrl').value = gambar;
+    document.getElementById('inputLink').value = link;
+    document.getElementById('infoGambarLama').style.display = 'block';
+    btnSubmit.innerText = 'Simpan Perubahan';
+    window.scrollTo(0, 0);
+}
+
+window.hapusData = async function(id) {
+    if(confirm("Yakin hapus barang ini?")) {
+        await supabase.from('produk').delete().eq('id', id);
         loadData();
-    </script>
-</body>
-</html>
+    }
+}
+
+loadData();
