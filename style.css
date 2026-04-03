@@ -1,53 +1,76 @@
-body { 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    background-color: #f8f9fa; 
-    margin: 0; 
-    padding: 20px; 
-}
-.header { text-align: center; margin-bottom: 20px; }
-.header h1 { color: #111; margin-bottom: 5px; font-size: 24px; }
-.header p { color: #666; font-size: 14px; margin-top: 0; }
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-/* Kolom Pencarian */
-.search-container { max-width: 1000px; margin: 0 auto 15px auto; }
-#searchInput {
-    width: 100%; padding: 12px 20px; border-radius: 8px;
-    border: 1px solid #e0e0e0; background-color: #f1f3f5;
-    font-size: 15px; outline: none; box-sizing: border-box;
-}
-#searchInput:focus { border-color: #ccc; background-color: #fff; }
+const supabaseUrl = 'https://svfaoiofpyzovkdqrsqo.supabase.co';
+const supabaseKey = 'sb_publishable_LIGKz-_pNueJeC054YMMDg_PjtG1FCQ';
+const supabase = createClient(supabaseUrl, supabaseKey, { global: { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } } });
 
-/* Menu Kategori Horizontal Scroll */
-.category-container {
-    max-width: 1000px; margin: 0 auto 25px auto;
-    display: flex; gap: 10px; overflow-x: auto;
-    padding-bottom: 5px; white-space: nowrap;
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-}
-.category-container::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+const productGrid = document.getElementById('productGrid');
+const searchInput = document.getElementById('searchInput');
+const catButtons = document.querySelectorAll('.cat-btn');
 
-.cat-btn {
-    padding: 8px 20px; border-radius: 20px; background: white;
-    border: 1px solid #e0e0e0; color: #444; font-size: 14px;
-    cursor: pointer; transition: 0.2s; white-space: nowrap;
-}
-.cat-btn.active { background: #111; color: white; border-color: #111; }
+let allProducts = []; // Lemari sementara untuk nyimpan data
 
-/* Grid Produk */
-.product-grid { 
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
-    gap: 15px; max-width: 1000px; margin: 0 auto; 
+// Ambil data dari Supabase
+async function loadProducts() {
+    const { data, error } = await supabase.from('produk').select('*').order('id', { ascending: false });
+    if (error) { productGrid.innerHTML = '<p>Gagal memuat produk.</p>'; return; }
+    
+    allProducts = data; // Simpan ke lemari sementara
+    renderProducts(allProducts); // Tampilkan semua
 }
-.product-card { 
-    background: white; padding: 12px; border-radius: 12px; 
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04); text-align: center; 
+
+// Fungsi menampilkan produk ke layar
+function renderProducts(dataToRender) {
+    productGrid.innerHTML = ''; 
+    if (dataToRender.length === 0) {
+        productGrid.innerHTML = '<p style="text-align: center; width: 100%;">Produk tidak ditemukan.</p>';
+        return;
+    }
+    dataToRender.forEach(item => {
+        productGrid.innerHTML += `
+            <div class="product-card">
+                <img src="${item.gambar}" alt="${item.nama}">
+                <h3>${item.nama}</h3>
+                <p>${item.kategori}</p>
+                <a href="${item.link}" target="_blank" class="btn-beli">Lihat Produk</a>
+            </div>
+        `;
+    });
 }
-.product-card img { width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; }
-.product-card h3 { font-size: 15px; color: #222; margin: 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-.product-card p { color: #888; font-size: 12px; margin-bottom: 15px; }
-.btn-beli { 
-    display: block; background: #ee4d2d; color: white; padding: 10px; 
-    text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px;
-}
-.btn-beli:hover { background: #d73a1c; }
+
+// Fitur Filter Kategori
+catButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        // Ganti warna tombol aktif
+        catButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const category = btn.getAttribute('data-cat');
+        
+        // Saring datanya
+        if (category === 'Semua') {
+            renderProducts(allProducts);
+        } else {
+            const filteredData = allProducts.filter(item => item.kategori === category);
+            renderProducts(filteredData);
+        }
+    });
+});
+
+// Fitur Search Bar
+searchInput.addEventListener('input', (e) => {
+    const searchText = e.target.value.toLowerCase();
+    
+    // Saring berdasarkan nama produk
+    const searchedData = allProducts.filter(item => 
+        item.nama.toLowerCase().includes(searchText)
+    );
+    
+    // Reset kategori ke 'Semua' saat mencari
+    catButtons.forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-cat="Semua"]').classList.add('active');
+    
+    renderProducts(searchedData);
+});
+
+loadProducts();
