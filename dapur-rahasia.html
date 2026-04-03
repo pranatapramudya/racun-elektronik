@@ -18,13 +18,12 @@
     </style>
 </head>
 <body>
-
 <div class="admin-container">
     <h2>Gudang Rahasia (Admin)</h2>
     <form id="adminForm">
         <input type="hidden" id="editId">
         <input type="hidden" id="oldImageUrl">
-        <p id="infoGambarLama" style="display:none; color:orange; font-size:12px;">*Mode Edit: Kosongkan file gambar jika tidak ingin diganti.</p>
+        <p id="infoGambarLama" style="display:none; color:orange; font-size:12px;">*Mode Edit: Kosongkan file gambar jika tidak diganti.</p>
 
         <label>Gambar Produk:</label>
         <input type="file" id="inputGambar" accept="image/*">
@@ -33,7 +32,11 @@
         <input type="text" id="inputNama" required placeholder="Contoh: Smartwatch Clean Tech">
 
         <label>Kategori:</label>
-        <input type="text" id="inputKategori" required placeholder="Contoh: Gadget">
+        <select id="inputKategori" required>
+            <option value="Setup Gaming">Setup Gaming</option>
+            <option value="Gadget">Gadget</option>
+            <option value="Kamar">Kamar</option>
+        </select>
 
         <label>Link Affiliate (TikTok/Shopee):</label>
         <input type="url" id="inputLink" required placeholder="https://shopee.co.id/...">
@@ -44,108 +47,57 @@
     <h3>Daftar Barang di Etalase</h3>
     <div style="overflow-x:auto;">
         <table>
-            <thead>
-                <tr>
-                    <th>Gambar</th>
-                    <th>ID</th>
-                    <th>Nama</th>
-                    <th>Kategori</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                </tbody>
+            <thead><tr><th>Gambar</th><th>ID</th><th>Nama</th><th>Kategori</th><th>Aksi</th></tr></thead>
+            <tbody id="tableBody"></tbody>
         </table>
     </div>
 </div>
 
 <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-    // 1. KTP dan Alamat Resmi
     const supabaseUrl = 'https://svfaoiofpyzovkdqrsqo.supabase.co';
     const supabaseKey = 'sb_publishable_LIGKz-_pNueJeC054YMMDg_PjtG1FCQ';
-
-    // 2. Mesin Baru: Memaksa KTP menempel agar tidak dicegat
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-        global: {
-            headers: {
-                'apikey': supabaseKey,
-                'Authorization': `Bearer ${supabaseKey}`
-            }
-        }
-    });
+    const supabase = createClient(supabaseUrl, supabaseKey, { global: { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } } });
 
     const form = document.getElementById('adminForm');
     const tableBody = document.getElementById('tableBody');
     const btnSubmit = document.getElementById('btnSubmit');
 
-    // Fungsi mengambil barang dari gudang
     async function loadData() {
         const { data, error } = await supabase.from('produk').select('*').order('id', { ascending: false });
-        if (error) {
-            console.error("Gagal ambil data:", error);
-            return;
-        }
-        
+        if (error) return console.error("Gagal ambil data:", error);
         tableBody.innerHTML = '';
         if(data) {
             data.forEach(item => {
-                tableBody.innerHTML += `
-                    <tr>
-                        <td><img src="${item.gambar}" style="max-width:60px; border-radius:4px;"></td>
-                        <td>${item.id}</td>
-                        <td>${item.nama}</td>
-                        <td>${item.kategori}</td>
-                        <td>
-                            <button class="btn-edit" onclick="editData(${item.id}, '${item.nama.replace(/'/g, "\\'")}', '${item.kategori}', '${item.gambar}', '${item.link}')">Edit</button>
-                            <button class="btn-delete" onclick="hapusData(${item.id})">Hapus</button>
-                        </td>
-                    </tr>
-                `;
+                tableBody.innerHTML += `<tr>
+                    <td><img src="${item.gambar}" style="max-width:60px; border-radius:4px;"></td>
+                    <td>${item.id}</td><td>${item.nama}</td><td>${item.kategori}</td>
+                    <td>
+                        <button class="btn-edit" onclick="editData(${item.id}, '${item.nama.replace(/'/g, "\\'")}', '${item.kategori}', '${item.gambar}', '${item.link}')">Edit</button>
+                        <button class="btn-delete" onclick="hapusData(${item.id})">Hapus</button>
+                    </td>
+                </tr>`;
             });
         }
     }
 
-    // Fungsi menyimpan barang baru / update barang lama
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        btnSubmit.innerText = 'Mengunggah & Menyimpan... ⏳';
-        btnSubmit.disabled = true;
-
+        btnSubmit.innerText = 'Mengunggah... ⏳'; btnSubmit.disabled = true;
         const id = document.getElementById('editId').value;
         const fileInput = document.getElementById('inputGambar');
         let finalImageUrl = document.getElementById('oldImageUrl').value; 
 
-        // Kalau kurir bawa foto baru
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
             const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`; 
-
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('gambar') 
-                .upload(fileName, file);
-
-            if (uploadError) {
-                alert('Gagal upload gambar ke lemari: ' + uploadError.message);
-                btnSubmit.innerText = 'Simpan Barang Baru';
-                btnSubmit.disabled = false;
-                return;
-            }
-
-            const { data: publicUrlData } = supabase.storage.from('gambar').getPublicUrl(fileName);
-            finalImageUrl = publicUrlData.publicUrl;
+            const { error: uploadError } = await supabase.storage.from('gambar').upload(fileName, file);
+            if (uploadError) { alert('Gagal upload gambar!'); btnSubmit.innerText = 'Simpan Barang Baru'; btnSubmit.disabled = false; return; }
+            finalImageUrl = supabase.storage.from('gambar').getPublicUrl(fileName).data.publicUrl;
         }
 
-        // Validasi foto harus ada
-        if (!finalImageUrl) {
-            alert('Pilih gambar produk terlebih dahulu!');
-            btnSubmit.innerText = 'Simpan Barang Baru';
-            btnSubmit.disabled = false;
-            return;
-        }
+        if (!finalImageUrl) { alert('Pilih gambar!'); btnSubmit.innerText = 'Simpan Barang Baru'; btnSubmit.disabled = false; return; }
 
-        // Paket data teks untuk diserahkan ke satpam database
         const payload = {
             nama: document.getElementById('inputNama').value,
             kategori: document.getElementById('inputKategori').value,
@@ -153,51 +105,26 @@
             link: document.getElementById('inputLink').value
         };
 
-        // Proses tulis ke buku besar (Database)
-        if (id) {
-            const { error: updateError } = await supabase.from('produk').update(payload).eq('id', id);
-            if (updateError) alert('Gagal Update: ' + updateError.message);
-        } else {
-            const { error: insertError } = await supabase.from('produk').insert([payload]);
-            if (insertError) {
-                alert('Gagal Simpan (Ditolak Satpam): ' + insertError.message);
-                console.error(insertError);
-            }
-        }
+        if (id) await supabase.from('produk').update(payload).eq('id', id);
+        else await supabase.from('produk').insert([payload]);
 
-        form.reset();
-        document.getElementById('editId').value = '';
-        document.getElementById('oldImageUrl').value = '';
+        form.reset(); document.getElementById('editId').value = ''; document.getElementById('oldImageUrl').value = '';
         document.getElementById('infoGambarLama').style.display = 'none';
-        btnSubmit.innerText = 'Simpan Barang Baru';
-        btnSubmit.disabled = false;
-        loadData(); // Refresh etalase
+        btnSubmit.innerText = 'Simpan Barang Baru'; btnSubmit.disabled = false;
+        loadData();
     });
 
-    // Fungsi klik tombol Edit
     window.editData = function(id, nama, kategori, gambar, link) {
-        document.getElementById('editId').value = id;
-        document.getElementById('inputNama').value = nama;
-        document.getElementById('inputKategori').value = kategori;
-        document.getElementById('oldImageUrl').value = gambar;
-        document.getElementById('inputLink').value = link;
-        document.getElementById('infoGambarLama').style.display = 'block';
-        btnSubmit.innerText = 'Simpan Perubahan';
-        window.scrollTo(0, 0);
+        document.getElementById('editId').value = id; document.getElementById('inputNama').value = nama;
+        document.getElementById('inputKategori').value = kategori; document.getElementById('oldImageUrl').value = gambar;
+        document.getElementById('inputLink').value = link; document.getElementById('infoGambarLama').style.display = 'block';
+        btnSubmit.innerText = 'Simpan Perubahan'; window.scrollTo(0, 0);
     }
 
-    // Fungsi klik tombol Hapus
     window.hapusData = async function(id) {
-        if(confirm("Yakin hapus barang ini dari gudang?")) {
-            const { error } = await supabase.from('produk').delete().eq('id', id);
-            if (error) alert('Gagal hapus: ' + error.message);
-            loadData();
-        }
+        if(confirm("Yakin hapus?")) { await supabase.from('produk').delete().eq('id', id); loadData(); }
     }
-
-    // Panggil kurir pertama kali web dibuka
     loadData();
 </script>
-
 </body>
 </html>
