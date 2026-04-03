@@ -27,7 +27,7 @@ body { font-family: -apple-system, sans-serif; background-color: #f6f6f6; margin
 }
 .cat-btn.active { background: #0f172a; color: white; border-color: #0f172a; }
 
-/* Grid 2 Kolom Mobile */
+/* GRID 2 KOLOM DI HP */
 .product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 
 .product-card { 
@@ -45,23 +45,11 @@ body { font-family: -apple-system, sans-serif; background-color: #f6f6f6; margin
     border-radius: 6px; font-weight: bold; font-size: 12px; text-align: center; margin-top: auto;
 }
 
-/* DESAIN TOMBOL NAVIGASI HALAMAN */
-.pagination { 
-    display: flex; 
-    justify-content: center; 
-    gap: 8px; 
-    margin: 30px 0; 
-    padding-bottom: 20px;
-}
+/* TOMBOL HALAMAN */
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 25px 0; padding-bottom: 20px; }
 .page-btn { 
-    padding: 8px 14px; 
-    border: 1px solid #ddd; 
-    background: white; 
-    border-radius: 6px; 
-    cursor: pointer; 
-    font-weight: 600; 
-    font-size: 13px;
-    transition: 0.2s;
+    padding: 8px 14px; border: 1px solid #ddd; background: white; 
+    border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;
 }
 .page-btn.active { background: #111; color: white; border-color: #111; }
 .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
