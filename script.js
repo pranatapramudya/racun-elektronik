@@ -7,44 +7,43 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 });
 
 const productGrid = document.getElementById('productGrid');
+const paginationBox = document.getElementById('pagination');
 const searchInput = document.getElementById('searchInput');
 const catButtons = document.querySelectorAll('.cat-btn');
 
-let allProducts = []; 
+let currentPage = 0;
+const itemsPerPage = 6; 
 let activeCategory = 'Semua';
 
-// 1. Ambil Data
 async function loadProducts() {
-    const { data, error } = await supabase.from('produk').select('*').order('id', { ascending: false });
-    if (error) { productGrid.innerHTML = '<p>Gagal muat data.</p>'; return; }
-    allProducts = data;
-    filterAndRender();
-}
-
-// 2. Logika Penyaring (Kategori + Search)
-function filterAndRender() {
+    const from = currentPage * itemsPerPage;
+    const to = from + itemsPerPage - 1;
     const searchText = searchInput.value.toLowerCase();
-    
-    const filtered = allProducts.filter(item => {
-        const matchCategory = (activeCategory === 'Semua' || item.kategori === activeCategory);
-        const matchSearch = item.nama.toLowerCase().includes(searchText);
-        return matchCategory && matchSearch;
-    });
 
-    render(filtered);
+    let query = supabase.from('produk').select('*', { count: 'exact' });
+
+    if (activeCategory !== 'Semua') query = query.eq('kategori', activeCategory);
+    if (searchText) query = query.ilike('nama', `%${searchText}%`);
+
+    const { data, count, error } = await query
+        .order('id', { ascending: false })
+        .range(from, to);
+
+    if (error) return;
+    render(data);
+    setupPagination(count);
 }
 
-// 3. Render ke HTML
 function render(data) {
-    productGrid.innerHTML = ''; 
+    productGrid.innerHTML = '';
     if (data.length === 0) {
-        productGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 50px 0; color: #999;">Produk tidak ditemukan... 🔍</p>';
+        productGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px 0; color: #999;">Produk tidak ditemukan... 🔍</p>';
         return;
     }
     data.forEach(item => {
         productGrid.innerHTML += `
             <div class="product-card">
-                <img src="${item.gambar}" alt="${item.nama}">
+                <img src="${item.gambar}" alt="${item.nama}" loading="lazy">
                 <h3>${item.nama}</h3>
                 <p>${item.kategori}</p>
                 <a href="${item.link}" target="_blank" class="btn-beli">Lihat Produk</a>
@@ -52,16 +51,42 @@ function render(data) {
     });
 }
 
-// 4. Event Listeners
+function setupPagination(totalItems) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    paginationBox.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const prevBtn = document.createElement('button');
+    prevBtn.innerText = '‹'; prevBtn.className = 'page-btn';
+    prevBtn.disabled = currentPage === 0;
+    prevBtn.onclick = () => { currentPage--; loadProducts(); window.scrollTo(0,0); };
+    paginationBox.appendChild(prevBtn);
+
+    for (let i = 0; i < totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.innerText = i + 1;
+        btn.className = i === currentPage ? 'page-btn active' : 'page-btn';
+        btn.onclick = () => { currentPage = i; loadProducts(); window.scrollTo(0,0); };
+        paginationBox.appendChild(btn);
+    }
+
+    const nextBtn = document.createElement('button');
+    nextBtn.innerText = '›'; nextBtn.className = 'page-btn';
+    nextBtn.disabled = currentPage >= totalPages - 1;
+    nextBtn.onclick = () => { currentPage++; loadProducts(); window.scrollTo(0,0); };
+    paginationBox.appendChild(nextBtn);
+}
+
 catButtons.forEach(btn => {
     btn.addEventListener('click', () => {
         catButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         activeCategory = btn.getAttribute('data-cat');
-        filterAndRender();
+        currentPage = 0;
+        loadProducts();
     });
 });
 
-searchInput.addEventListener('input', () => filterAndRender());
+searchInput.addEventListener('input', () => { currentPage = 0; loadProducts(); });
 
 loadProducts();
