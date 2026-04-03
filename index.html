@@ -2,36 +2,32 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Katalog Racun Shopee</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Racun Shopee Pranajaya</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header class="sticky-header">
-        <div class="header-top">
-            <h1>⚡ Racun Shopee Pranajaya</h1>
-            <p>Pilihan Terbaik Untukmu</p>
-        </div>
 
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="🔍 Cari nama atau ketik nomor...">
-        </div>
+    <div class="header">
+        <h1>⚡ Racun Shopee Pranajaya</h1>
+        <p>Pilihan Terbaik Untukmu</p>
+    </div>
 
-        <nav class="categories-wrapper">
-            <div class="categories" id="categoryList">
-                <button class="cat-btn active" onclick="filterCategory('Semua', this)">Semua</button>
-                <button class="cat-btn" onclick="filterCategory('Setup Gaming', this)">Setup Gaming</button>
-                <button class="cat-btn" onclick="filterCategory('Gadget', this)">Gadget</button>
-                <button class="cat-btn" onclick="filterCategory('Kamar', this)">Kamar</button>
-            </div>
-        </nav>
-    </header>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="🔍 Cari nama produk...">
+    </div>
 
-    <main class="container">
-        <div id="product-grid" class="product-grid">
-            </div>
-    </main>
+    <div class="category-container">
+        <button class="cat-btn active" data-cat="Semua">Semua</button>
+        <button class="cat-btn" data-cat="Setup Gaming">Setup Gaming</button>
+        <button class="cat-btn" data-cat="Gadget">Gadget</button>
+        <button class="cat-btn" data-cat="Kamar">Kamar</button>
+    </div>
 
-    <script src="script.js"></script>
+    <div class="product-grid" id="productGrid">
+        <p style="text-align: center; width: 100%; color: #666;">Sedang memuat racun... ⏳</p>
+    </div>
+
+    <script type="module" src="script.js"></script>
 </body>
 </html>
