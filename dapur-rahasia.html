@@ -3,70 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dapur Rahasia - Admin</title>
+    <title>Dapur Rahasia - Admin PIN Protected</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 15px; background: #f4f4f4; }
-        .admin-container { background: white; padding: 20px; border-radius: 8px; max-width: 600px; margin: auto; }
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        button { background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .btn-edit { background: #ffc107; color: black; width: auto; padding: 4px 8px; }
-        .btn-delete { background: #dc3545; color: white; width: auto; padding: 4px 8px; }
+        /* Sembunyikan gudang sebelum PIN benar */
+        #secure-content { display: none; }
+        
+        body { font-family: 'Segoe UI', sans-serif; padding: 15px; background: #f4f4f4; margin: 0; }
+        .admin-container { background: white; padding: 20px; border-radius: 12px; max-width: 600px; margin: 20px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; color: #333; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        label { font-size: 13px; font-weight: bold; color: #666; }
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0 18px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        button#btnSubmit { background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button#btnSubmit:hover { background: #218838; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; font-size: 12px; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
+        th { background: #f9f9f9; color: #555; }
+        img.thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+        .btn-edit { background: #ffc107; color: black; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .btn-delete { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
-<div class="admin-container">
-    <h2>Gudang Admin</h2>
-    <form id="adminForm">
-        <input type="hidden" id="editId"><input type="hidden" id="oldImageUrl">
-        <label>Gambar Produk:</label><input type="file" id="inputGambar" accept="image/*">
-        <label>Nama Produk:</label><input type="text" id="inputNama" required>
-        <label>Kategori:</label>
-        <select id="inputKategori" required>
-            <option value="Setup Gaming">Setup Gaming</option>
-            <option value="Gadget">Gadget</option>
-            <option value="Kamar">Kamar</option>
-        </select>
-        <label>Link Shopee/TikTok:</label><input type="url" id="inputLink" required>
-        <button type="submit" id="btnSubmit">Simpan Barang</button>
-    </form>
-    <div style="overflow-x:auto;">
-        <table>
-            <thead><tr><th>Foto</th><th>Nama</th><th>Kategori</th><th>Aksi</th></tr></thead>
-            <tbody id="tableBody"></tbody>
-        </table>
+
+<div id="secure-content">
+    <div class="admin-container">
+        <h2>📦 Kelola Gudang Produk</h2>
+        <form id="adminForm">
+            <input type="hidden" id="editId">
+            <input type="hidden" id="oldImageUrl">
+            
+            <label>Upload Foto Baru (Kosongkan jika edit teks saja):</label>
+            <input type="file" id="inputGambar" accept="image/*">
+
+            <label>Nama Produk:</label>
+            <input type="text" id="inputNama" required placeholder="Nama barang...">
+
+            <label>Kategori:</label>
+            <select id="inputKategori" required>
+                <option value="Setup Gaming">Setup Gaming</option>
+                <option value="Gadget">Gadget</option>
+                <option value="Kamar">Kamar</option>
+            </select>
+
+            <label>Link Affiliate (Shopee/TikTok):</label>
+            <input type="url" id="inputLink" required placeholder="https://...">
+
+            <button type="submit" id="btnSubmit">Simpan Produk</button>
+        </form>
+
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Foto</th>
+                        <th>Nama</th>
+                        <th>Kategori</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    // 1. KEAMANAN PIN
+    const PIN_BENAR = "5225";
+    const userPin = prompt("Masukkan PIN Rahasia:");
+
+    if (userPin !== PIN_BENAR) {
+        alert("PIN SALAH! Akses ditolak.");
+        window.location.href = "index.html";
+    } else {
+        // Jika benar, tampilkan konten
+        document.getElementById('secure-content').style.display = "block";
+    }
+
+    // 2. KONEKSI SUPABASE
     const supabaseUrl = 'https://svfaoiofpyzovkdqrsqo.supabase.co';
     const supabaseKey = 'sb_publishable_LIGKz-_pNueJeC054YMMDg_PjtG1FCQ';
-    const supabase = createClient(supabaseUrl, supabaseKey, { global: { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } } });
+    const supabase = createClient(supabaseUrl, supabaseKey, { 
+        global: { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } } 
+    });
 
     const form = document.getElementById('adminForm');
     const tableBody = document.getElementById('tableBody');
     const btnSubmit = document.getElementById('btnSubmit');
 
+    // Load Data
     async function loadData() {
-        const { data } = await supabase.from('produk').select('*').order('id', { ascending: false });
+        const { data, error } = await supabase.from('produk').select('*').order('id', { ascending: false });
+        if (error) return;
         tableBody.innerHTML = '';
         data.forEach(item => {
-            tableBody.innerHTML += `<tr>
-                <td><img src="${item.gambar}" width="40"></td>
-                <td>${item.nama}</td><td>${item.kategori}</td>
-                <td>
-                    <button class="btn-edit" onclick="editData(${item.id}, '${item.nama}', '${item.kategori}', '${item.gambar}', '${item.link}')">E</button>
-                    <button class="btn-delete" onclick="hapusData(${item.id})">X</button>
-                </td>
-            </tr>`;
+            tableBody.innerHTML += `
+                <tr>
+                    <td><img src="${item.gambar}" class="thumb"></td>
+                    <td>${item.nama}</td>
+                    <td>${item.kategori}</td>
+                    <td>
+                        <button class="btn-edit" onclick="editData(${item.id}, '${item.nama.replace(/'/g, "\\'")}', '${item.kategori}', '${item.gambar}', '${item.link}')">Edit</button>
+                        <button class="btn-delete" onclick="hapusData(${item.id})">Hapus</button>
+                    </td>
+                </tr>`;
         });
     }
 
+    // Simpan/Update
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        btnSubmit.innerText = 'Proses...';
+        btnSubmit.innerText = 'Memproses...';
+        btnSubmit.disabled = true;
+
         const id = document.getElementById('editId').value;
         const fileInput = document.getElementById('inputGambar');
         let finalImageUrl = document.getElementById('oldImageUrl').value; 
@@ -74,24 +127,52 @@
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
             const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`; 
-            await supabase.storage.from('gambar').upload(fileName, file);
-            finalImageUrl = supabase.storage.from('gambar').getPublicUrl(fileName).data.publicUrl;
+            const { error: upErr } = await supabase.storage.from('gambar').upload(fileName, file);
+            if (!upErr) {
+                finalImageUrl = supabase.storage.from('gambar').getPublicUrl(fileName).data.publicUrl;
+            }
         }
 
-        const payload = { nama: document.getElementById('inputNama').value, kategori: document.getElementById('inputKategori').value, gambar: finalImageUrl, link: document.getElementById('inputLink').value };
-        if (id) await supabase.from('produk').update(payload).eq('id', id);
-        else await supabase.from('produk').insert([payload]);
+        const payload = {
+            nama: document.getElementById('inputNama').value,
+            kategori: document.getElementById('inputKategori').value,
+            gambar: finalImageUrl,
+            link: document.getElementById('inputLink').value
+        };
 
-        form.reset(); document.getElementById('editId').value = ''; loadData();
-        btnSubmit.innerText = 'Simpan Barang';
+        if (id) {
+            await supabase.from('produk').update(payload).eq('id', id);
+        } else {
+            if(!finalImageUrl) { alert("Pilih gambar!"); btnSubmit.disabled = false; return; }
+            await supabase.from('produk').insert([payload]);
+        }
+
+        form.reset();
+        document.getElementById('editId').value = '';
+        document.getElementById('oldImageUrl').value = '';
+        btnSubmit.innerText = 'Simpan Produk';
+        btnSubmit.disabled = false;
+        loadData();
     });
 
+    // Global Functions
     window.editData = (id, n, k, g, l) => {
-        document.getElementById('editId').value = id; document.getElementById('inputNama').value = n;
-        document.getElementById('inputKategori').value = k; document.getElementById('oldImageUrl').value = g;
-        document.getElementById('inputLink').value = l; window.scrollTo(0,0);
-    }
-    window.hapusData = async (id) => { if(confirm("Hapus?")) { await supabase.from('produk').delete().eq('id', id); loadData(); } }
+        document.getElementById('editId').value = id;
+        document.getElementById('inputNama').value = n;
+        document.getElementById('inputKategori').value = k;
+        document.getElementById('oldImageUrl').value = g;
+        document.getElementById('inputLink').value = l;
+        window.scrollTo(0,0);
+        btnSubmit.innerText = "Simpan Perubahan";
+    };
+
+    window.hapusData = async (id) => {
+        if(confirm("Hapus produk ini?")) {
+            await supabase.from('produk').delete().eq('id', id);
+            loadData();
+        }
+    };
+
     loadData();
 </script>
 </body>
