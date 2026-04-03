@@ -45,12 +45,13 @@ body { font-family: -apple-system, sans-serif; background-color: #f6f6f6; margin
     border-radius: 6px; font-weight: bold; font-size: 12px; text-align: center; margin-top: auto;
 }
 
-/* TOMBOL HALAMAN */
+/* TOMBOL HALAMAN (PAGINATION) */
 .pagination { display: flex; justify-content: center; gap: 8px; margin: 25px 0; padding-bottom: 20px; }
 .page-btn { 
     padding: 8px 14px; border: 1px solid #ddd; background: white; 
-    border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;
+    border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.2s;
 }
+.page-btn:hover { background: #f0f0f0; }
 .page-btn.active { background: #111; color: white; border-color: #111; }
 .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
