@@ -12,16 +12,15 @@ const searchInput = document.getElementById('searchInput');
 const catButtons = document.querySelectorAll('.cat-btn');
 
 let currentPage = 0;
-const itemsPerPage = 6; 
+const itemsPerPage = 6; // Nampilin 6 barang per halaman
 let activeCategory = 'Semua';
 
-// Fungsi Tarik Data dari Gudang
 async function loadProducts() {
     const from = currentPage * itemsPerPage;
     const to = from + itemsPerPage - 1;
     const searchText = searchInput.value.toLowerCase();
 
-    // Query ke Supabase
+    // Query ke Gudang
     let query = supabase.from('produk').select('*', { count: 'exact' });
 
     if (activeCategory !== 'Semua') query = query.eq('kategori', activeCategory);
@@ -31,16 +30,12 @@ async function loadProducts() {
         .order('id', { ascending: false })
         .range(from, to);
 
-    if (error) {
-        console.error("Gagal ambil data:", error);
-        return;
-    }
+    if (error) return;
     
     render(data);
     setupPagination(count);
 }
 
-// Fungsi Gambar Produk ke Layar
 function render(data) {
     productGrid.innerHTML = '';
     if (!data || data.length === 0) {
@@ -58,12 +53,9 @@ function render(data) {
     });
 }
 
-// Fungsi Gambar Tombol Navigasi
 function setupPagination(totalItems) {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     paginationBox.innerHTML = '';
-
-    // Jangan munculin tombol kalau cuma 1 halaman
     if (totalPages <= 1) return;
 
     // Tombol Sebelumnya
@@ -73,7 +65,7 @@ function setupPagination(totalItems) {
     prevBtn.onclick = () => { currentPage--; loadProducts(); window.scrollTo(0,0); };
     paginationBox.appendChild(prevBtn);
 
-    // Angka-angka
+    // Angka Halaman
     for (let i = 0; i < totalPages; i++) {
         const btn = document.createElement('button');
         btn.innerText = i + 1;
@@ -90,22 +82,20 @@ function setupPagination(totalItems) {
     paginationBox.appendChild(nextBtn);
 }
 
-// Event Klik Kategori
+// Event Listeners
 catButtons.forEach(btn => {
     btn.addEventListener('click', () => {
         catButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         activeCategory = btn.getAttribute('data-cat');
-        currentPage = 0; // Reset ke hal 1
+        currentPage = 0;
         loadProducts();
     });
 });
 
-// Event Ngetik Cari
 searchInput.addEventListener('input', () => {
-    currentPage = 0; // Reset ke hal 1
+    currentPage = 0;
     loadProducts();
 });
 
-// Jalankan saat pertama buka
 loadProducts();
