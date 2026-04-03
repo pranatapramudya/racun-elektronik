@@ -13,6 +13,7 @@ const catButtons = document.querySelectorAll('.cat-btn');
 let allProducts = []; 
 let activeCategory = 'Semua';
 
+// 1. Ambil Data
 async function loadProducts() {
     const { data, error } = await supabase.from('produk').select('*').order('id', { ascending: false });
     if (error) { productGrid.innerHTML = '<p>Gagal muat data.</p>'; return; }
@@ -20,16 +21,20 @@ async function loadProducts() {
     filterAndRender();
 }
 
+// 2. Logika Penyaring (Kategori + Search)
 function filterAndRender() {
     const searchText = searchInput.value.toLowerCase();
+    
     const filtered = allProducts.filter(item => {
         const matchCategory = (activeCategory === 'Semua' || item.kategori === activeCategory);
         const matchSearch = item.nama.toLowerCase().includes(searchText);
         return matchCategory && matchSearch;
     });
+
     render(filtered);
 }
 
+// 3. Render ke HTML
 function render(data) {
     productGrid.innerHTML = ''; 
     if (data.length === 0) {
@@ -47,6 +52,7 @@ function render(data) {
     });
 }
 
+// 4. Event Listeners
 catButtons.forEach(btn => {
     btn.addEventListener('click', () => {
         catButtons.forEach(b => b.classList.remove('active'));
@@ -57,4 +63,5 @@ catButtons.forEach(btn => {
 });
 
 searchInput.addEventListener('input', () => filterAndRender());
+
 loadProducts();
