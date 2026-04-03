@@ -7,14 +7,12 @@ body { font-family: -apple-system, sans-serif; background-color: #f6f6f6; margin
 
 .main-container { max-width: 1000px; margin: 0 auto; padding: 12px; }
 
-/* Search Bar */
 .search-container { margin-bottom: 15px; }
 #searchInput {
     width: 100%; padding: 12px 15px; border-radius: 10px;
     border: 1px solid #eee; background-color: #f1f3f5; font-size: 14px; outline: none;
 }
 
-/* Category Scroll */
 .category-wrapper { overflow: hidden; margin-bottom: 20px; }
 .category-container {
     display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px;
@@ -29,7 +27,7 @@ body { font-family: -apple-system, sans-serif; background-color: #f6f6f6; margin
 }
 .cat-btn.active { background: #0f172a; color: white; border-color: #0f172a; }
 
-/* Grid 2 Kolom Mobile */
+/* GRID 2 KOLOM DI HP */
 .product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 
 .product-card { 
@@ -49,10 +47,7 @@ body { font-family: -apple-system, sans-serif; background-color: #f6f6f6; margin
 
 /* Pagination */
 .pagination { display: flex; justify-content: center; gap: 8px; margin: 25px 0; }
-.page-btn { 
-    padding: 8px 14px; border: 1px solid #ddd; background: white; 
-    border-radius: 6px; cursor: pointer; font-weight: 600; 
-}
+.page-btn { padding: 8px 14px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-weight: 600; }
 .page-btn.active { background: #111; color: white; }
 .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
