@@ -1,11 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dapur Rahasia - Admin</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
+        .admin-container { background: white; padding: 20px; border-radius: 8px; max-width: 800px; margin: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        input, select, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background: #28a745; color: white; cursor: pointer; border: none; font-weight: bold; }
+        button:hover { background: #218838; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .btn-edit { background: #ffc107; color: black; padding: 5px 10px; width: auto; }
+        .btn-delete { background: #dc3545; color: white; padding: 5px 10px; width: auto; }
+    </style>
+</head>
+<body>
+
+<div class="admin-container">
+    <h2>Gudang Rahasia (Admin)</h2>
+    <form id="adminForm">
+        <input type="hidden" id="editId">
+        <input type="hidden" id="oldImageUrl">
+        <p id="infoGambarLama" style="display:none; color:orange; font-size:12px;">*Mode Edit: Kosongkan file gambar jika tidak ingin diganti.</p>
+
+        <label>Gambar Produk:</label>
+        <input type="file" id="inputGambar" accept="image/*">
+
+        <label>Nama Produk:</label>
+        <input type="text" id="inputNama" required placeholder="Contoh: Smartwatch Clean Tech">
+
+        <label>Kategori:</label>
+        <input type="text" id="inputKategori" required placeholder="Contoh: Gadget">
+
+        <label>Link Affiliate (TikTok/Shopee):</label>
+        <input type="url" id="inputLink" required placeholder="https://shopee.co.id/...">
+
+        <button type="submit" id="btnSubmit">Simpan Barang Baru</button>
+    </form>
+
+    <h3>Daftar Barang di Etalase</h3>
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Gambar</th>
+                    <th>ID</th>
+                    <th>Nama</th>
+                    <th>Kategori</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
+    </div>
+</div>
+
 <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    // 1. KTP dan Alamat Resmi (Tanpa Spasi)
+    // 1. KTP dan Alamat Resmi
     const supabaseUrl = 'https://svfaoiofpyzovkdqrsqo.supabase.co';
     const supabaseKey = 'sb_publishable_LIGKz-_pNueJeC054YMMDg_PjtG1FCQ';
 
-    // 2. Mesin Baru: Memaksa KTP menempel di kepala kurir agar tidak dicegat Brave/Browser
+    // 2. Mesin Baru: Memaksa KTP menempel agar tidak dicegat
     const supabase = createClient(supabaseUrl, supabaseKey, {
         global: {
             headers: {
@@ -22,29 +83,35 @@
     // Fungsi mengambil barang dari gudang
     async function loadData() {
         const { data, error } = await supabase.from('produk').select('*').order('id', { ascending: false });
-        if (error) return console.error("Gagal ambil data:", error);
+        if (error) {
+            console.error("Gagal ambil data:", error);
+            return;
+        }
         
         tableBody.innerHTML = '';
-        data.forEach(item => {
-            tableBody.innerHTML += `
-                <tr>
-                    <td><img src="${item.gambar}" style="max-width:50px;"></td>
-                    <td>${item.id}</td>
-                    <td>${item.nama}</td>
-                    <td>${item.kategori}</td>
-                    <td>
-                        <button class="btn-edit" onclick="editData(${item.id}, '${item.nama.replace(/'/g, "\\'")}', '${item.kategori}', '${item.gambar}', '${item.link}')">Edit</button>
-                        <button class="btn-delete" onclick="hapusData(${item.id})">Hapus</button>
-                    </td>
-                </tr>
-            `;
-        });
+        if(data) {
+            data.forEach(item => {
+                tableBody.innerHTML += `
+                    <tr>
+                        <td><img src="${item.gambar}" style="max-width:60px; border-radius:4px;"></td>
+                        <td>${item.id}</td>
+                        <td>${item.nama}</td>
+                        <td>${item.kategori}</td>
+                        <td>
+                            <button class="btn-edit" onclick="editData(${item.id}, '${item.nama.replace(/'/g, "\\'")}', '${item.kategori}', '${item.gambar}', '${item.link}')">Edit</button>
+                            <button class="btn-delete" onclick="hapusData(${item.id})">Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
     }
 
     // Fungsi menyimpan barang baru / update barang lama
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         btnSubmit.innerText = 'Mengunggah & Menyimpan... ⏳';
+        btnSubmit.disabled = true;
 
         const id = document.getElementById('editId').value;
         const fileInput = document.getElementById('inputGambar');
@@ -62,6 +129,7 @@
             if (uploadError) {
                 alert('Gagal upload gambar ke lemari: ' + uploadError.message);
                 btnSubmit.innerText = 'Simpan Barang Baru';
+                btnSubmit.disabled = false;
                 return;
             }
 
@@ -73,6 +141,7 @@
         if (!finalImageUrl) {
             alert('Pilih gambar produk terlebih dahulu!');
             btnSubmit.innerText = 'Simpan Barang Baru';
+            btnSubmit.disabled = false;
             return;
         }
 
@@ -101,6 +170,7 @@
         document.getElementById('oldImageUrl').value = '';
         document.getElementById('infoGambarLama').style.display = 'none';
         btnSubmit.innerText = 'Simpan Barang Baru';
+        btnSubmit.disabled = false;
         loadData(); // Refresh etalase
     });
 
@@ -128,3 +198,6 @@
     // Panggil kurir pertama kali web dibuka
     loadData();
 </script>
+
+</body>
+</html>
