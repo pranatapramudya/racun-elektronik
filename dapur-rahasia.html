@@ -5,48 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dapur Admin - Login Pro</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
-        .box { background: white; padding: 20px; border-radius: 12px; max-width: 500px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; }
-        button { background: #28a745; color: white; font-weight: bold; cursor: pointer; border: none; }
-        #admin-content { display: none; max-width: 800px; }
-        .thumb { width: 50px; height: 50px; object-fit: cover; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
-        th, td { border: 1px solid #eee; padding: 10px; }
+        body { font-family: -apple-system, sans-serif; background: #f4f4f4; padding: 15px; margin: 0; }
+        .box { background: white; padding: 20px; border-radius: 12px; max-width: 600px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        /* Desain Form */
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 14px; }
+        button { background: #28a745; color: white; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
+        button:hover { background: #218838; }
+        
+        #admin-content { display: none; }
+        
+        /* Desain Tabel */
+        .thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
+        th { background: #f9f9f9; color: #555; }
+        
+        /* Tombol Aksi Jejer */
+        .action-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+        .btn-edit { background: #ffc107; color: black; padding: 6px 12px; width: auto; font-size: 12px; }
+        .btn-del { background: #dc3545; color: white; padding: 6px 12px; width: auto; font-size: 12px; }
     </style>
 </head>
 <body>
 
-<div id="login-box" class="box">
-    <h2 style="text-align:center;">🔒 Admin Login</h2>
-    <input type="email" id="email" placeholder="Email Admin">
-    <input type="password" id="password" placeholder="Password">
+<div id="login-box" class="box" style="margin-top: 10vh;">
+    <h2 style="text-align:center; margin-top: 0;">🔒 Admin Login</h2>
+    <input type="email" id="email" placeholder="Email Admin" required>
+    <input type="password" id="password" placeholder="Password" required>
     <button onclick="handleLogin()">Masuk ke Gudang</button>
 </div>
 
 <div id="admin-content" class="box">
-    <div style="display:flex; justify-content: space-between; align-items: center;">
-        <h2>📦 Kelola Produk</h2>
-        <button onclick="handleLogout()" style="width:auto; background:#dc3545; padding:5px 15px;">Logout</button>
+    <div style="display:flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+        <h2 style="margin: 0;">📦 Kelola Produk</h2>
+        <button onclick="handleLogout()" style="width:auto; background:#dc3545; padding:8px 15px; margin: 0; font-size: 12px;">Logout</button>
     </div>
     
-    <form id="productForm">
+    <form id="productForm" style="margin-top: 15px;">
         <input type="hidden" id="editId"><input type="hidden" id="oldImg">
+        
+        <label style="font-size: 12px; font-weight: bold; color: #555;">Gambar Produk:</label>
         <input type="file" id="inpFile" accept="image/*">
+        
         <input type="text" id="inpNama" placeholder="Nama Produk" required>
-        <select id="inpKat">
+        <select id="inpKat" required>
             <option value="Setup Gaming">Setup Gaming</option>
             <option value="Gadget">Gadget</option>
             <option value="Kamar">Kamar</option>
         </select>
         <input type="url" id="inpLink" placeholder="Link Affiliate" required>
+        
         <button type="submit" id="btnSave">Simpan Produk</button>
     </form>
 
-    <table>
-        <thead><tr><th>Foto</th><th>Nama</th><th>Aksi</th></tr></thead>
-        <tbody id="tableBody"></tbody>
-    </table>
+    <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>Foto</th><th>Nama & Kategori</th><th>Aksi</th></tr></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+    
+    <div id="admin-nav" style="text-align: center; margin-top: 15px;"></div>
 </div>
 
 <script type="module">
@@ -55,50 +75,92 @@
 
     const loginBox = document.getElementById('login-box');
     const adminContent = document.getElementById('admin-content');
+    
+    let currentPage = 0;
+    const itemsPerPage = 8; // Nampilin 8 barang per halaman di Admin
 
-    // 1. CEK LOGIN
+    // A. CEK LOGIN
     async function checkUser() {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) { loginBox.style.display='none'; adminContent.style.display='block'; loadData(); }
+        if (session) { 
+            loginBox.style.display = 'none'; 
+            adminContent.style.display = 'block'; 
+            loadData(); 
+        } else { 
+            loginBox.style.display = 'block'; 
+            adminContent.style.display = 'none'; 
+        }
     }
 
-    // 2. PROSES LOGIN
+    // B. PROSES LOGIN
     window.handleLogin = async () => {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) alert("Gagal: " + error.message);
+        if (error) alert("Gagal Login: Cek lagi email/password lu!");
         else location.reload();
     };
 
-    // 3. LOGOUT
-    window.handleLogout = async () => { await supabase.auth.signOut(); location.reload(); };
+    // C. LOGOUT
+    window.handleLogout = async () => { 
+        await supabase.auth.signOut(); 
+        location.reload(); 
+    };
 
-    // 4. LOAD DATA
+    // D. TARIK DATA + PAGINATION
     async function loadData() {
-        const { data } = await supabase.from('produk').select('*').order('id', {ascending:false});
+        const from = currentPage * itemsPerPage; 
+        const to = from + itemsPerPage - 1;
+        const { data, count, error } = await supabase.from('produk').select('*', {count:'exact'}).order('id', {ascending:false}).range(from, to);
+        
+        if (error) { alert("Gagal muat data!"); return; }
+        
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
         data.forEach(item => {
+            const safeName = item.nama.replace(/'/g, "\\'"); // Biar nama yg ada kutipnya ga error
             tbody.innerHTML += `<tr>
                 <td><img src="${item.gambar}" class="thumb"></td>
-                <td>${item.nama}</td>
                 <td>
-                    <button style="background:#ffc107; color:black; width:auto; padding:3px 8px;" onclick="editBarang(${item.id}, '${item.nama}', '${item.kategori}', '${item.gambar}', '${item.link}')">Edit</button>
+                    <strong>${item.nama}</strong><br>
+                    <span style="font-size:10px; color:#888;">${item.kategori}</span>
+                </td>
+                <td>
+                    <div class="action-btns">
+                        <button class="btn-edit" onclick="editBarang(${item.id}, '${safeName}', '${item.kategori}', '${item.gambar}', '${item.link}')">Edit</button>
+                        <button class="btn-del" onclick="hapusBarang(${item.id})">Hapus</button>
+                    </div>
                 </td>
             </tr>`;
         });
+        renderNav(count);
     }
 
-    // 5. SIMPAN DATA (INSERT/UPDATE)
+    function renderNav(total) {
+        const totalPages = Math.ceil(total / itemsPerPage);
+        const nav = document.getElementById('admin-nav');
+        if (totalPages <= 1) { nav.innerHTML = ''; return; }
+        nav.innerHTML = `
+            <button onclick="changePage(-1)" ${currentPage === 0 ? 'disabled' : ''} style="width:auto; padding:5px 15px;">Prev</button>
+            <span style="margin: 0 10px; font-size: 13px; font-weight: bold;">Hal ${currentPage+1} dari ${totalPages}</span>
+            <button onclick="changePage(1)" ${currentPage >= totalPages-1 ? 'disabled' : ''} style="width:auto; padding:5px 15px;">Next</button>
+        `;
+    }
+    window.changePage = (dir) => { currentPage += dir; loadData(); };
+
+    // E. SIMPAN / UPDATE BARANG
     document.getElementById('productForm').onsubmit = async (e) => {
         e.preventDefault();
+        const btnSave = document.getElementById('btnSave');
+        btnSave.innerText = 'Menyimpan... ⏳'; btnSave.disabled = true;
+        
         const id = document.getElementById('editId').value;
         let imgUrl = document.getElementById('oldImg').value;
         const file = document.getElementById('inpFile').files[0];
 
+        // Kalau ada upload foto baru
         if (file) {
-            const fName = `${Date.now()}-${file.name}`;
+            const fName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
             await supabase.storage.from('gambar').upload(fName, file);
             imgUrl = supabase.storage.from('gambar').getPublicUrl(fName).data.publicUrl;
         }
@@ -110,18 +172,42 @@
             link: document.getElementById('inpLink').value 
         };
 
-        if (id) await supabase.from('produk').update(payload).eq('id', id);
-        else await supabase.from('produk').insert([payload]);
+        if (id) {
+            await supabase.from('produk').update(payload).eq('id', id);
+        } else {
+            if(!imgUrl) { alert("Wajib masukin foto bre!"); btnSave.innerText = 'Simpan Produk'; btnSave.disabled = false; return; }
+            await supabase.from('produk').insert([payload]);
+        }
 
-        location.reload();
+        // Reset Form setelah beres
+        document.getElementById('productForm').reset();
+        document.getElementById('editId').value = '';
+        document.getElementById('oldImg').value = '';
+        btnSave.innerText = 'Simpan Produk'; btnSave.disabled = false;
+        loadData(); // Refresh tabel
     };
 
+    // F. LEMPAR DATA KE FORM (Edit)
     window.editBarang = (id, n, k, g, l) => {
         document.getElementById('editId').value = id;
         document.getElementById('inpNama').value = n;
         document.getElementById('inpKat').value = k;
         document.getElementById('oldImg').value = g;
         document.getElementById('inpLink').value = l;
+        document.getElementById('btnSave').innerText = 'Simpan Perubahan';
+        window.scrollTo(0,0); // Layar otomatis ke atas
+    };
+
+    // G. FUNGSI HAPUS BARANG (Ini yang lu tunggu-tunggu)
+    window.hapusBarang = async (id) => {
+        if (confirm("Serius mau ngehapus barang ini, bre?")) {
+            const { error } = await supabase.from('produk').delete().eq('id', id);
+            if (error) alert("Waduh gagal hapus: " + error.message);
+            else { 
+                alert("Barang berhasil dibuang ke tong sampah! 🗑️"); 
+                loadData(); // Langsung update tabel tanpa perlu refresh web
+            }
+        }
     };
 
     checkUser();
