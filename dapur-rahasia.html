@@ -8,20 +8,17 @@
         body { font-family: -apple-system, sans-serif; background: #f4f4f4; padding: 15px; margin: 0; }
         .box { background: white; padding: 20px; border-radius: 12px; max-width: 600px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         
-        /* Desain Form */
         input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 14px; }
         button { background: #28a745; color: white; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
         button:hover { background: #218838; }
         
         #admin-content { display: none; }
         
-        /* Desain Tabel */
         .thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
         th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
         th { background: #f9f9f9; color: #555; }
         
-        /* Tombol Aksi Jejer */
         .action-btns { display: flex; gap: 5px; flex-wrap: wrap; }
         .btn-edit { background: #ffc107; color: black; padding: 6px 12px; width: auto; font-size: 12px; }
         .btn-del { background: #dc3545; color: white; padding: 6px 12px; width: auto; font-size: 12px; }
@@ -92,7 +89,6 @@
         }
     }
 
-    // B. PROSES LOGIN
     window.handleLogin = async () => {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
@@ -101,13 +97,11 @@
         else location.reload();
     };
 
-    // C. LOGOUT
     window.handleLogout = async () => { 
         await supabase.auth.signOut(); 
         location.reload(); 
     };
 
-    // D. TARIK DATA + PAGINATION
     async function loadData() {
         const from = currentPage * itemsPerPage; 
         const to = from + itemsPerPage - 1;
@@ -148,7 +142,6 @@
     }
     window.changePage = (dir) => { currentPage += dir; loadData(); };
 
-    // E. SIMPAN / UPDATE BARANG
     document.getElementById('productForm').onsubmit = async (e) => {
         e.preventDefault();
         const btnSave = document.getElementById('btnSave');
@@ -158,7 +151,6 @@
         let imgUrl = document.getElementById('oldImg').value;
         const file = document.getElementById('inpFile').files[0];
 
-        // Kalau ada upload foto baru
         if (file) {
             const fName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
             await supabase.storage.from('gambar').upload(fName, file);
@@ -179,15 +171,14 @@
             await supabase.from('produk').insert([payload]);
         }
 
-        // Reset Form setelah beres
+    
         document.getElementById('productForm').reset();
         document.getElementById('editId').value = '';
         document.getElementById('oldImg').value = '';
         btnSave.innerText = 'Simpan Produk'; btnSave.disabled = false;
-        loadData(); // Refresh tabel
+        loadData(); 
     };
 
-    // F. LEMPAR DATA KE FORM (Edit)
     window.editBarang = (id, n, k, g, l) => {
         document.getElementById('editId').value = id;
         document.getElementById('inpNama').value = n;
@@ -198,14 +189,13 @@
         window.scrollTo(0,0); // Layar otomatis ke atas
     };
 
-    // G. FUNGSI HAPUS BARANG (Ini yang lu tunggu-tunggu)
     window.hapusBarang = async (id) => {
         if (confirm("Serius mau ngehapus barang ini, bre?")) {
             const { error } = await supabase.from('produk').delete().eq('id', id);
             if (error) alert("Waduh gagal hapus: " + error.message);
             else { 
                 alert("Barang berhasil dibuang ke tong sampah! 🗑️"); 
-                loadData(); // Langsung update tabel tanpa perlu refresh web
+                loadData();
             }
         }
     };
