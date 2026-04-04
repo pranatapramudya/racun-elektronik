@@ -3,117 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dapur Rahasia - Admin PIN</title>
+    <title>Dapur Admin - Login Pro</title>
     <style>
-        #secure-content { display: none; }
-        body { font-family: Arial, sans-serif; padding: 15px; background: #f4f4f4; margin: 0; }
-        .admin-container { background: white; padding: 20px; border-radius: 12px; max-width: 600px; margin: auto; }
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button#btnSubmit { background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
+        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
+        .box { background: white; padding: 20px; border-radius: 12px; max-width: 500px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; }
+        button { background: #28a745; color: white; font-weight: bold; cursor: pointer; border: none; }
+        #admin-content { display: none; max-width: 800px; }
+        .thumb { width: 50px; height: 50px; object-fit: cover; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
-        th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
-        .thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
-        .btn-edit { background: #ffc107; border: none; padding: 5px; cursor: pointer; }
-        .btn-delete { background: #dc3545; color: white; border: none; padding: 5px; cursor: pointer; }
+        th, td { border: 1px solid #eee; padding: 10px; }
     </style>
 </head>
 <body>
-<div id="secure-content">
-    <div class="admin-container">
-        <h2>📦 Admin Gudang</h2>
-        <form id="adminForm">
-            <input type="hidden" id="editId"><input type="hidden" id="oldImageUrl">
-            <label>Gambar:</label><input type="file" id="inputGambar" accept="image/*">
-            <label>Nama:</label><input type="text" id="inputNama" required>
-            <label>Kategori:</label>
-            <select id="inputKategori" required>
-                <option value="Setup Gaming">Setup Gaming</option>
-                <option value="Gadget">Gadget</option>
-                <option value="Kamar">Kamar</option>
-            </select>
-            <label>Link:</label><input type="url" id="inputLink" required>
-            <button type="submit" id="btnSubmit">Simpan Produk</button>
-        </form>
-        <div style="overflow-x:auto;">
-            <table>
-                <thead><tr><th>Foto</th><th>Nama</th><th>Kategori</th><th>Aksi</th></tr></thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-        </div>
-        <div id="admin-nav" style="margin-top: 15px; text-align: center;"></div>
+
+<div id="login-box" class="box">
+    <h2 style="text-align:center;">🔒 Admin Login</h2>
+    <input type="email" id="email" placeholder="Email Admin">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="handleLogin()">Masuk ke Gudang</button>
+</div>
+
+<div id="admin-content" class="box">
+    <div style="display:flex; justify-content: space-between; align-items: center;">
+        <h2>📦 Kelola Produk</h2>
+        <button onclick="handleLogout()" style="width:auto; background:#dc3545; padding:5px 15px;">Logout</button>
     </div>
+    
+    <form id="productForm">
+        <input type="hidden" id="editId"><input type="hidden" id="oldImg">
+        <input type="file" id="inpFile" accept="image/*">
+        <input type="text" id="inpNama" placeholder="Nama Produk" required>
+        <select id="inpKat">
+            <option value="Setup Gaming">Setup Gaming</option>
+            <option value="Gadget">Gadget</option>
+            <option value="Kamar">Kamar</option>
+        </select>
+        <input type="url" id="inpLink" placeholder="Link Affiliate" required>
+        <button type="submit" id="btnSave">Simpan Produk</button>
+    </form>
+
+    <table>
+        <thead><tr><th>Foto</th><th>Nama</th><th>Aksi</th></tr></thead>
+        <tbody id="tableBody"></tbody>
+    </table>
 </div>
 
 <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-    const PIN_BENAR = "5225";
-    const userPin = prompt("Masukkan PIN Admin:");
-    if (userPin !== PIN_BENAR) { window.location.href = "index.html"; } 
-    else { document.getElementById('secure-content').style.display = "block"; }
+    const supabase = createClient('https://svfaoiofpyzovkdqrsqo.supabase.co', 'sb_publishable_LIGKz-_pNueJeC054YMMDg_PjtG1FCQ');
 
-    const supabaseUrl = 'https://svfaoiofpyzovkdqrsqo.supabase.co';
-    const supabaseKey = 'sb_publishable_LIGKz-_pNueJeC054YMMDg_PjtG1FCQ';
-    const supabase = createClient(supabaseUrl, supabaseKey, { global: { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } } });
+    const loginBox = document.getElementById('login-box');
+    const adminContent = document.getElementById('admin-content');
 
-    const form = document.getElementById('adminForm');
-    const tableBody = document.getElementById('tableBody');
-    const btnSubmit = document.getElementById('btnSubmit');
-    let currentPage = 0; const itemsPerPage = 10;
+    // 1. CEK LOGIN
+    async function checkUser() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) { loginBox.style.display='none'; adminContent.style.display='block'; loadData(); }
+    }
 
+    // 2. PROSES LOGIN
+    window.handleLogin = async () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) alert("Gagal: " + error.message);
+        else location.reload();
+    };
+
+    // 3. LOGOUT
+    window.handleLogout = async () => { await supabase.auth.signOut(); location.reload(); };
+
+    // 4. LOAD DATA
     async function loadData() {
-        const from = currentPage * itemsPerPage; const to = from + itemsPerPage - 1;
-        const { data, count, error } = await supabase.from('produk').select('*', {count:'exact'}).order('id', {ascending:false}).range(from, to);
-        if (error) return;
-        tableBody.innerHTML = '';
+        const { data } = await supabase.from('produk').select('*').order('id', {ascending:false});
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
         data.forEach(item => {
-            tableBody.innerHTML += `<tr>
+            tbody.innerHTML += `<tr>
                 <td><img src="${item.gambar}" class="thumb"></td>
-                <td>${item.nama}</td><td>${item.kategori}</td>
+                <td>${item.nama}</td>
                 <td>
-                    <button class="btn-edit" onclick="editData(${item.id}, '${item.nama.replace(/'/g, "\\'")}', '${item.kategori}', '${item.gambar}', '${item.link}')">Edit</button>
-                    <button class="btn-delete" onclick="hapusData(${item.id})">Hapus</button>
+                    <button style="background:#ffc107; color:black; width:auto; padding:3px 8px;" onclick="editBarang(${item.id}, '${item.nama}', '${item.kategori}', '${item.gambar}', '${item.link}')">Edit</button>
                 </td>
             </tr>`;
         });
-        renderNav(count);
     }
 
-    function renderNav(total) {
-        const totalPages = Math.ceil(total / itemsPerPage);
-        const nav = document.getElementById('admin-nav');
-        nav.innerHTML = `
-            <button onclick="changePage(-1)" ${currentPage === 0 ? 'disabled' : ''} style="width:auto;">Prev</button>
-            <span> ${currentPage+1} / ${totalPages} </span>
-            <button onclick="changePage(1)" ${currentPage >= totalPages-1 ? 'disabled' : ''} style="width:auto;">Next</button>
-        `;
-    }
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault(); btnSubmit.innerText = 'Wait...';
+    // 5. SIMPAN DATA (INSERT/UPDATE)
+    document.getElementById('productForm').onsubmit = async (e) => {
+        e.preventDefault();
         const id = document.getElementById('editId').value;
-        const fileInput = document.getElementById('inputGambar');
-        let finalImageUrl = document.getElementById('oldImageUrl').value;
-        if (fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-            await supabase.storage.from('gambar').upload(fileName, file);
-            finalImageUrl = supabase.storage.from('gambar').getPublicUrl(fileName).data.publicUrl;
+        let imgUrl = document.getElementById('oldImg').value;
+        const file = document.getElementById('inpFile').files[0];
+
+        if (file) {
+            const fName = `${Date.now()}-${file.name}`;
+            await supabase.storage.from('gambar').upload(fName, file);
+            imgUrl = supabase.storage.from('gambar').getPublicUrl(fName).data.publicUrl;
         }
-        const payload = { nama: document.getElementById('inputNama').value, kategori: document.getElementById('inputKategori').value, gambar: finalImageUrl, link: document.getElementById('inputLink').value };
+
+        const payload = { 
+            nama: document.getElementById('inpNama').value, 
+            kategori: document.getElementById('inpKat').value, 
+            gambar: imgUrl, 
+            link: document.getElementById('inpLink').value 
+        };
+
         if (id) await supabase.from('produk').update(payload).eq('id', id);
         else await supabase.from('produk').insert([payload]);
-        form.reset(); document.getElementById('editId').value = ''; loadData();
-        btnSubmit.innerText = 'Simpan Produk';
-    });
 
-    window.editData = (id, n, k, g, l) => {
-        document.getElementById('editId').value = id; document.getElementById('inputNama').value = n;
-        document.getElementById('inputKategori').value = k; document.getElementById('oldImageUrl').value = g;
-        document.getElementById('inputLink').value = l; window.scrollTo(0,0);
+        location.reload();
     };
-    window.hapusData = async (id) => { if(confirm("Hapus?")) { await supabase.from('produk').delete().eq('id', id); loadData(); } };
-    window.changePage = (dir) => { currentPage += dir; loadData(); };
-    loadData();
+
+    window.editBarang = (id, n, k, g, l) => {
+        document.getElementById('editId').value = id;
+        document.getElementById('inpNama').value = n;
+        document.getElementById('inpKat').value = k;
+        document.getElementById('oldImg').value = g;
+        document.getElementById('inpLink').value = l;
+    };
+
+    checkUser();
 </script>
 </body>
 </html>
